@@ -97,7 +97,6 @@ const AiAnswerPanel: React.FC<AiAnswerPanelProps> = ({ messages, onBack, onAsk }
 
       {/* Follow-up question box */}
       <div ref={bottomRef} />
-      <AiQuestionBox onAsk={onAsk} />
     </div>
   );
 };

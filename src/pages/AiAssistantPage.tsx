@@ -69,18 +69,18 @@ const AiAssistantPage: React.FC = () => {
         <p style={{ color: "#666", fontSize: 13, margin: "4px 0 0" }}>汇总每日排产提醒，支持排产规则问答</p>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, overflow: "auto", padding: "0 16px 16px" }}>
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflow: "auto", padding: "0 16px" }}>
         {!expanded ? (
-          <>
-            <DailyAlertPanel alerts={alerts} onResolve={handleResolve} />
-            <div style={{ marginTop: 16 }}>
-              <AiQuestionBox onAsk={handleAsk} />
-            </div>
-          </>
+          <DailyAlertPanel alerts={alerts} onResolve={handleResolve} />
         ) : (
           <AiAnswerPanel messages={messages} onBack={() => setExpanded(false)} onAsk={handleAsk} />
         )}
+      </div>
+
+      {/* 对话框始终固定在最底部 */}
+      <div style={{ flexShrink: 0, padding: "8px 16px 12px", borderTop: "1px solid #f0f0f0", background: "#fafafa" }}>
+        <AiQuestionBox onAsk={handleAsk} />
       </div>
     </div>
   );
