@@ -10,6 +10,7 @@ import FormingMutexPage from "./pages/FormingMutexPage";
 import FormingSchedulePage from "./pages/FormingSchedulePage";
 import SlurrySchedulePage from "./pages/SlurrySchedulePage";
 import ScheduleConfirmPage from "./pages/ScheduleConfirmPage";
+import AiAssistantPage from "./pages/AiAssistantPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const AppRoutes: React.FC = () => {
         <Route path="master/slurry-archive" element={<SlurryArchivePage />} />
         <Route path="master/forming-mutex" element={<FormingMutexPage />} />
         <Route path="schedule/forming" element={<FormingSchedulePage />} />
+        <Route path="ai-assistant" element={<AiAssistantPage />} />
         <Route path="schedule/slurry" element={<SlurrySchedulePage />} />
         <Route path="schedule/confirm" element={<ScheduleConfirmPage />} />
       </Route>
