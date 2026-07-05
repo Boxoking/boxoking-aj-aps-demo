@@ -970,14 +970,13 @@ const FormingSchedulePage: React.FC = () => {
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>车间</th>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台名称</th>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台编号</th>
-                          <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>总数量</th>
                         </tr></thead>
                         <tbody>
                           {machineGanttData.map((row: any, ri: number) => {
                             if (row.type === "machine-summary" && row.isFirst) {
                               return (
                                 <tr key={`sum-${row.machineId}`} style={{ height: 28, background: "#f0fdf4" }}>
-                                  <td colSpan={4} style={{ padding: "0 8px", fontSize: 12, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9", lineHeight: "28px" }}>
+                                  <td colSpan={3} style={{ padding: "0 8px", fontSize: 12, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9", lineHeight: "28px" }}>
                                     {row.workshopName} — {row.machineName}
                                   </td>
                                 </tr>
@@ -989,7 +988,6 @@ const FormingSchedulePage: React.FC = () => {
                                   <td style={tdStyle}></td>
                                   <td style={{ ...tdStyle, fontWeight: 600 }}>{row.machineName}</td>
                                   <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}>{row.machineId}</td>
-                                  <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.totalMachines}</td>
                                 </tr>
                               );
                             }
@@ -999,7 +997,6 @@ const FormingSchedulePage: React.FC = () => {
                                 <td style={tdStyle}></td>
                                 <td style={{ ...tdStyle, paddingLeft: 16 }}>{row.displayName}</td>
                                 <td style={tdStyle}></td>
-                                <td style={tdStyle}>{row.machineCount}/{row.totalMachines}</td>
                               </tr>
                             );
                           })}
