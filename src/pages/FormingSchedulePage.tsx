@@ -976,8 +976,8 @@ const FormingSchedulePage: React.FC = () => {
                           {machineGanttData.map((row: any, ri: number) => {
                             if (row.type === "machine-summary" && row.isFirst) {
                               return (
-                                <tr key={`sum-${row.machineId}`} style={{ cursor: "pointer", height: ROW_HEIGHT, background: "#f0fdf4" }}>
-                                  <td colSpan={4} style={{ padding: "4px 8px", fontSize: 12, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9" }}>
+                                <tr key={`sum-${row.machineId}`} style={{ height: 28, background: "#f0fdf4" }}>
+                                  <td colSpan={4} style={{ padding: "0 8px", fontSize: 12, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9", lineHeight: "28px" }}>
                                     {row.workshopName} — {row.machineName}
                                   </td>
                                 </tr>
@@ -985,11 +985,11 @@ const FormingSchedulePage: React.FC = () => {
                             }
                             if (row.type === "machine-summary") {
                               return (
-                                <tr key={`sum-${row.machineId}`} style={{ cursor: "pointer", height: ROW_HEIGHT }}>
+                                <tr key={`sum-${row.machineId}`} style={{ height: 28 }}>
                                   <td style={tdStyle}></td>
                                   <td style={{ ...tdStyle, fontWeight: 600 }}>{row.machineName}</td>
                                   <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}>{row.machineId}</td>
-                                  <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.machineCount}/{row.totalMachines}</td>
+                                  <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.totalMachines}</td>
                                 </tr>
                               );
                             }
