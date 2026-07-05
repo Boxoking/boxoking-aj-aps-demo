@@ -1,0 +1,121 @@
+/* ── 甘特图专用样式 ── */
+
+.gantt-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gantt-body-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.gantt-labels-col {
+  flex-shrink: 0;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  border-right: 2px solid #d9d9d9;
+}
+
+.gantt-scroll-col {
+  flex: 1;
+  overflow: auto;
+}
+
+.gantt-scroll-col::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.gantt-scroll-col::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.gantt-scroll-col::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-header-row {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.gantt-data-row {
+  display: flex;
+}
+
+.gantt-cell-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.gantt-cell-stock {
+  font-size: 10px;
+  color: #999;
+}
+
+.gantt-cell-qty {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.gantt-cell-qty.feedback {
+  color: #ea580c;
+}
+
+/* ── 确认页面甘特图 ── */
+.confirm-gantt-cell {
+  min-width: 80px;
+  max-width: 100px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-right: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e8e8e8;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.confirm-gantt-cell:hover {
+  opacity: 0.8;
+}
+
+/* ── 机台甘特图 ── */
+.machine-gantt-cell {
+  min-width: 100px;
+  max-width: 120px;
+  height: 42px;
+  padding: 2px 4px;
+  font-size: 10px;
+  border-right: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.machine-gantt-label {
+  min-width: 130px;
+  max-width: 130px;
+  height: 42px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-right: 2px solid #d9d9d9;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  flex-shrink: 0;
+}
