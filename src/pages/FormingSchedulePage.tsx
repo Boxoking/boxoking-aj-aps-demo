@@ -631,8 +631,7 @@ const FormingSchedulePage: React.FC = () => {
     const allRows: any[] = [];
 
     for (const [wsName, mids] of workshopMap) {
-      // 车间分隔行
-      allRows.push({ type: "workshop-sep", workshopName: wsName, cells: [] });
+      let firstMachineInWorkshop = true;
 
       for (const mid of mids) {
         const machine = store.formingMachines.find((m) => m.machineId === mid);
@@ -648,27 +647,33 @@ const FormingSchedulePage: React.FC = () => {
           return { date: ds.date, shift: ds.shift, totalUsed, total: machine.quantity, task: null as ScheduleTask | null };
         });
 
+        const totalAllocatedForMachine = machineTasks.reduce((s, t) => s + t.machineCount, 0);
+
         if (usedGroups.size === 0) {
           allRows.push({
             type: "machine-summary",
             machineId: mid, machineName: machine.machineName,
             workshopName: wsName, machineCount: 0, totalMachines: machine.quantity,
+            isFirstInWorkshop: firstMachineInWorkshop,
             cells: summaryCells,
           });
+          firstMachineInWorkshop = false;
         } else {
           const sortedGroups = [...usedGroups].sort((a, b) => a - b);
           let nextGroup = 0;
           while (usedGroups.has(nextGroup)) nextGroup++;
 
-          // 汇总行
+          // 汇总行（车间第一个机台带车间名）
           allRows.push({
             type: "machine-summary",
             machineId: mid, machineName: machine.machineName,
             workshopName: wsName,
             machineCount: sortedGroups.reduce((s, gi) => s + (machineTasks.filter((t) => t.groupIndex === gi)[0]?.machineCount ?? 0), 0),
             totalMachines: machine.quantity,
+            isFirstInWorkshop: firstMachineInWorkshop,
             cells: summaryCells,
           });
+          firstMachineInWorkshop = false;
 
           // 分组明细行
           sortedGroups.forEach((gi) => {
@@ -956,24 +961,17 @@ const FormingSchedulePage: React.FC = () => {
                         <thead><tr style={{ background: "#fafafa", height: 36 }}>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>车间</th>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台名称</th>
-                          <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>分组</th>
+                          <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台编号</th>
+                          <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>总数量</th>
                         </tr></thead>
                         <tbody>
                           {machineGanttData.map((row: any, ri: number) => {
-                            if (row.type === "workshop-sep") {
-                              return (
-                                <tr key={`ws-${ri}`} style={{ background: "#f0fdf4", height: 24 }}>
-                                  <td colSpan={3} style={{ padding: "0 8px", fontSize: 11, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9" }}>
-                                    {row.workshopName}
-                                  </td>
-                                </tr>
-                              );
-                            }
                             if (row.type === "machine-summary") {
                               return (
-                                <tr key={`sum-${row.machineId}`} style={{ cursor: "pointer", height: 28, background: "#fafafa" }}>
-                                  <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}></td>
+                                <tr key={`sum-${row.machineId}`} style={{ cursor: "pointer", height: ROW_HEIGHT, background: row.isFirstInWorkshop ? "#f0fdf4" : "#fafafa" }}>
+                                  <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.isFirstInWorkshop ? row.workshopName : ""}</td>
                                   <td style={{ ...tdStyle, fontWeight: 600 }}>{row.machineName}</td>
+                                  <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}>{row.machineId}</td>
                                   <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.machineCount}/{row.totalMachines}</td>
                                 </tr>
                               );
@@ -983,6 +981,7 @@ const FormingSchedulePage: React.FC = () => {
                                 style={{ cursor: "pointer", height: ROW_HEIGHT }}>
                                 <td style={tdStyle}></td>
                                 <td style={{ ...tdStyle, paddingLeft: 16 }}>{row.displayName}</td>
+                                <td style={tdStyle}></td>
                                 <td style={tdStyle}>{row.machineCount}/{row.totalMachines}</td>
                               </tr>
                             );
@@ -1084,15 +1083,6 @@ const FormingSchedulePage: React.FC = () => {
                     </td></tr>
                   ) : (
                     machineGanttData.map((row: any, ri: number) => {
-                      if (row.type === "workshop-sep") {
-                        return (
-                          <tr key={`ws-${ri}`} style={{ background: "#f0fdf4", height: 24 }}>
-                            <td colSpan={dateShifts.length} style={{ padding: "0 8px", fontSize: 11, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9" }}>
-                              {row.workshopName}
-                            </td>
-                          </tr>
-                        );
-                      }
                       if (row.type === "machine-summary") {
                         return (
                           <tr key={`sum-${row.machineId}`} style={{ height: 28, background: "#fafafa" }}>
