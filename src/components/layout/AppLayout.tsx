@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Layout, Menu, Breadcrumb } from "antd";
 import {
   DashboardOutlined,
@@ -46,11 +46,7 @@ const AppLayout: React.FC = () => {
   const location = useLocation();
 
   const getSelectedKeys = () => [location.pathname];
-  const getOpenKeys = () => {
-    if (location.pathname.startsWith("/master")) return ["master"];
-    if (location.pathname.startsWith("/schedule")) return ["schedule"];
-    return [];
-  };
+  const [openKeys, setOpenKeys] = useState<string[]>(["master", "schedule"]);
 
   const crumbs = breadcrumbMap[location.pathname] || [];
 
@@ -61,7 +57,7 @@ const AppLayout: React.FC = () => {
           borderBottom: "1px solid #e8e8e8", fontWeight: 700, fontSize: 15, color: "#16a34a" }}>
           🏭 安井APS demo
         </div>
-        <Menu mode="inline" selectedKeys={getSelectedKeys()} defaultOpenKeys={getOpenKeys()}
+        <Menu mode="inline" selectedKeys={getSelectedKeys()} openKeys={openKeys} onOpenChange={setOpenKeys}
           items={menuItems} onClick={({ key }) => navigate(key)}
           style={{ borderRight: 0, marginTop: 8 }} />
       </Sider>
