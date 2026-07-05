@@ -5,6 +5,7 @@ import {
   SettingOutlined,
   ScheduleOutlined,
   CheckCircleOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
@@ -23,11 +24,11 @@ const menuItems = [
   { key: "schedule", icon: <ScheduleOutlined />, label: "排产管理",
     children: [
       { key: "/schedule/forming", label: "成型排产" },
-      { key: "/ai-assistant", label: "AI 排产助手" },
       { key: "/schedule/slurry", label: "浆料排产" },
       { key: "/schedule/confirm", label: "排产确认" },
     ],
   },
+  { key: "/ai-assistant", icon: <ThunderboltOutlined />, label: "AI 排产管理" },
 ];
 
 const breadcrumbMap: Record<string, string[]> = {
@@ -38,7 +39,7 @@ const breadcrumbMap: Record<string, string[]> = {
   "/master/slurry-archive": ["主数据", "浆料档案"],
   "/master/forming-mutex": ["主数据", "成型互斥"],
   "/schedule/forming": ["排产管理", "成型排产"],
-  "/ai-assistant": ["排产管理", "AI 排产助手"],
+  "/ai-assistant": ["AI 排产管理"],
   "/schedule/slurry": ["排产管理", "浆料排产"],
   "/schedule/confirm": ["排产管理", "排产确认"],
 };
