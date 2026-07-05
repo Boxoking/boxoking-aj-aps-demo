@@ -996,7 +996,7 @@ const FormingSchedulePage: React.FC = () => {
                                 style={{ cursor: "pointer", height: ROW_HEIGHT }}>
                                 <td style={tdStyle}></td>
                                 <td style={{ ...tdStyle, paddingLeft: 16 }}>{row.displayName}</td>
-                                <td style={tdStyle}></td>
+                                <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}>{row.machineId}</td>
                               </tr>
                             );
                           })}
