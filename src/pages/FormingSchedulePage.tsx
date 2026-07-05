@@ -618,70 +618,106 @@ const FormingSchedulePage: React.FC = () => {
     const machineIds = [...new Set(speeds.map((s) => s.machineId))];
     const tasks = scheduleStore.tasks;
 
-    const buildCells = (mid: string, gi: number) =>
-      dateShifts.map((ds) => {
-        const cellTasks = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
-          t.shift === ds.shift && t.processType === "成型" && t.groupIndex === gi);
-        const allShift = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
-          t.shift === ds.shift && t.processType === "成型");
-        const totalUsed = allShift.reduce((s, t) => s + t.machineCount, 0);
-        const machine = store.formingMachines.find((m) => m.machineId === mid)!;
-        return { date: ds.date, shift: ds.shift, task: cellTasks[0] || null as ScheduleTask | null,
-          available: machine.quantity - totalUsed, total: machine.quantity };
-      });
-
-    return machineIds.flatMap((mid) => {
-      const machine = store.formingMachines.find((m) => m.machineId === mid);
-      if (!machine) return [];
-      const machineTasks = tasks.filter((t) => t.machineId === mid && t.processType === "成型");
-      const usedGroups = new Set(machineTasks.map((t) => t.groupIndex));
-
-      // 没排产 → 不拆分，显示一行
-      if (usedGroups.size === 0) {
-        return [{
-          machineId: mid, machineName: machine.machineName,
-          displayName: machine.machineName, workshopName: machine.workshopName,
-          groupIndex: 0, isSplit: false, machineCount: 0, totalMachines: machine.quantity,
-          cells: buildCells(mid, 0),
-        }];
-      }
-
-      // 已排产 → 列出每个已用分组
-      const sortedGroups = [...usedGroups].sort((a, b) => a - b);
-      let nextGroup = 0;
-      while (usedGroups.has(nextGroup)) nextGroup++;
-
-      const rows = sortedGroups.map((gi) => {
-        const groupTasks = machineTasks.filter((t) => t.groupIndex === gi);
-        return {
-          machineId: mid, machineName: machine.machineName,
-          displayName: `${machine.machineName}#${gi + 1}`,
-          workshopName: machine.workshopName,
-          groupIndex: gi, isSplit: true,
-          machineCount: groupTasks[0]?.machineCount ?? 0,
-          totalMachines: machine.quantity,
-          cells: buildCells(mid, gi),
-        };
-      });
-
-      const totalAllocated = sortedGroups.reduce((sum, gi) => {
-        const gt = machineTasks.filter((t) => t.groupIndex === gi);
-        return sum + (gt[0]?.machineCount ?? 0);
-      }, 0);
-      const remaining = machine.quantity - totalAllocated;
-      if (remaining > 0) {
-        rows.push({
-          machineId: mid, machineName: machine.machineName,
-          displayName: `${machine.machineName}#${nextGroup + 1}`,
-          workshopName: machine.workshopName,
-          groupIndex: nextGroup, isSplit: true,
-          machineCount: remaining, totalMachines: machine.quantity,
-          cells: buildCells(mid, nextGroup),
-        });
-      }
-
-      return rows;
+    // 按车间分组
+    const workshopMap = new Map<string, string[]>();
+    machineIds.forEach((mid) => {
+      const m = store.formingMachines.find((x) => x.machineId === mid);
+      if (!m) return;
+      const ws = m.workshopName;
+      if (!workshopMap.has(ws)) workshopMap.set(ws, []);
+      workshopMap.get(ws)!.push(mid);
     });
+
+    const allRows: any[] = [];
+
+    for (const [wsName, mids] of workshopMap) {
+      // 车间分隔行
+      allRows.push({ type: "workshop-sep", workshopName: wsName, cells: [] });
+
+      for (const mid of mids) {
+        const machine = store.formingMachines.find((m) => m.machineId === mid);
+        if (!machine) continue;
+        const machineTasks = tasks.filter((t) => t.machineId === mid && t.processType === "成型");
+        const usedGroups = new Set(machineTasks.map((t) => t.groupIndex));
+
+        // 汇总行：每个班次的总使用量
+        const summaryCells = dateShifts.map((ds) => {
+          const allShift = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
+            t.shift === ds.shift && t.processType === "成型");
+          const totalUsed = allShift.reduce((s, t) => s + t.machineCount, 0);
+          return { date: ds.date, shift: ds.shift, totalUsed, total: machine.quantity, task: null as ScheduleTask | null };
+        });
+
+        if (usedGroups.size === 0) {
+          allRows.push({
+            type: "machine-summary",
+            machineId: mid, machineName: machine.machineName,
+            workshopName: wsName, machineCount: 0, totalMachines: machine.quantity,
+            cells: summaryCells,
+          });
+        } else {
+          const sortedGroups = [...usedGroups].sort((a, b) => a - b);
+          let nextGroup = 0;
+          while (usedGroups.has(nextGroup)) nextGroup++;
+
+          // 汇总行
+          allRows.push({
+            type: "machine-summary",
+            machineId: mid, machineName: machine.machineName,
+            workshopName: wsName,
+            machineCount: sortedGroups.reduce((s, gi) => s + (machineTasks.filter((t) => t.groupIndex === gi)[0]?.machineCount ?? 0), 0),
+            totalMachines: machine.quantity,
+            cells: summaryCells,
+          });
+
+          // 分组明细行
+          sortedGroups.forEach((gi) => {
+            const groupTasks = machineTasks.filter((t) => t.groupIndex === gi);
+            allRows.push({
+              type: "group",
+              machineId: mid, machineName: machine.machineName,
+              displayName: `${machine.machineName}#${gi + 1}`,
+              workshopName: wsName, groupIndex: gi,
+              machineCount: groupTasks[0]?.machineCount ?? 0,
+              totalMachines: machine.quantity,
+              cells: dateShifts.map((ds) => {
+                const cellTasks = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
+                  t.shift === ds.shift && t.processType === "成型" && t.groupIndex === gi);
+                const allShift = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
+                  t.shift === ds.shift && t.processType === "成型");
+                const totalUsed = allShift.reduce((s, t) => s + t.machineCount, 0);
+                return { date: ds.date, shift: ds.shift, task: cellTasks[0] || null as ScheduleTask | null,
+                  available: machine.quantity - totalUsed, total: machine.quantity };
+              }),
+            });
+          });
+
+          // 剩余空行
+          const totalAllocated = sortedGroups.reduce((sum, gi) => {
+            const gt = machineTasks.filter((t) => t.groupIndex === gi);
+            return sum + (gt[0]?.machineCount ?? 0);
+          }, 0);
+          const remaining = machine.quantity - totalAllocated;
+          if (remaining > 0) {
+            allRows.push({
+              type: "group",
+              machineId: mid, machineName: machine.machineName,
+              displayName: `${machine.machineName}#${nextGroup + 1}`,
+              workshopName: wsName, groupIndex: nextGroup,
+              machineCount: remaining, totalMachines: machine.quantity,
+              cells: dateShifts.map((ds) => {
+                const allShift = tasks.filter((t) => t.machineId === mid && t.date === ds.date &&
+                  t.shift === ds.shift && t.processType === "成型");
+                const totalUsed = allShift.reduce((s, t) => s + t.machineCount, 0);
+                return { date: ds.date, shift: ds.shift, task: null as ScheduleTask | null,
+                  available: machine.quantity - totalUsed, total: machine.quantity };
+              }),
+            });
+          }
+        }
+      }
+    }
+    return allRows;
   }, [selectedProduct, uiStore.activeProcessTab, store.formingSpeeds, store.formingMachines, dateShifts, scheduleStore.tasks]);
 
   /* ========== 速冻机台甘特图数据 ========== */
@@ -923,14 +959,34 @@ const FormingSchedulePage: React.FC = () => {
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>分组</th>
                         </tr></thead>
                         <tbody>
-                          {machineGanttData.map((row) => (
-                            <tr key={`${row.machineId}-${row.groupIndex}`}
-                              style={{ cursor: "pointer", height: ROW_HEIGHT }}>
-                              <td style={tdStyle}>{row.workshopName}</td>
-                              <td style={tdStyle}>{row.displayName}</td>
-                              <td style={tdStyle}>{row.machineCount}/{row.totalMachines}</td>
-                            </tr>
-                          ))}
+                          {machineGanttData.map((row: any, ri: number) => {
+                            if (row.type === "workshop-sep") {
+                              return (
+                                <tr key={`ws-${ri}`} style={{ background: "#f0fdf4", height: 24 }}>
+                                  <td colSpan={3} style={{ padding: "0 8px", fontSize: 11, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9" }}>
+                                    {row.workshopName}
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            if (row.type === "machine-summary") {
+                              return (
+                                <tr key={`sum-${row.machineId}`} style={{ cursor: "pointer", height: 28, background: "#fafafa" }}>
+                                  <td style={{ ...tdStyle, color: "#999", fontSize: 10 }}></td>
+                                  <td style={{ ...tdStyle, fontWeight: 600 }}>{row.machineName}</td>
+                                  <td style={{ ...tdStyle, fontWeight: 700, color: "#16a34a" }}>{row.machineCount}/{row.totalMachines}</td>
+                                </tr>
+                              );
+                            }
+                            return (
+                              <tr key={`${row.machineId}-${row.groupIndex}`}
+                                style={{ cursor: "pointer", height: ROW_HEIGHT }}>
+                                <td style={tdStyle}></td>
+                                <td style={{ ...tdStyle, paddingLeft: 16 }}>{row.displayName}</td>
+                                <td style={tdStyle}>{row.machineCount}/{row.totalMachines}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     ) : <div style={{ padding: 20, color: "#999", textAlign: "center" }}>请点击上方品相查看可用机台</div>}
@@ -1021,46 +1077,103 @@ const FormingSchedulePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {(uiStore.activeProcessTab === "成型" ? machineGanttData :
-                  uiStore.activeProcessTab === "速冻" ? freezingMachineGanttData :
-                  packagingMachineGanttData).length === 0 ? (
-                  <tr><td colSpan={dateShifts.length} style={{ padding: 40, textAlign: "center", color: "#999" }}>
-                    {selectedProduct ? "该品相当前工序无可用机台" : "请点击上方品相查看机台排产"}
-                  </td></tr>
+                {uiStore.activeProcessTab === "成型" ? (
+                  machineGanttData.length === 0 ? (
+                    <tr><td colSpan={dateShifts.length} style={{ padding: 40, textAlign: "center", color: "#999" }}>
+                      {selectedProduct ? "该品相当前工序无可用机台" : "请点击上方品相查看机台排产"}
+                    </td></tr>
+                  ) : (
+                    machineGanttData.map((row: any, ri: number) => {
+                      if (row.type === "workshop-sep") {
+                        return (
+                          <tr key={`ws-${ri}`} style={{ background: "#f0fdf4", height: 24 }}>
+                            <td colSpan={dateShifts.length} style={{ padding: "0 8px", fontSize: 11, fontWeight: 700, color: "#16a34a", borderBottom: "1px solid #d9d9d9" }}>
+                              {row.workshopName}
+                            </td>
+                          </tr>
+                        );
+                      }
+                      if (row.type === "machine-summary") {
+                        return (
+                          <tr key={`sum-${row.machineId}`} style={{ height: 28, background: "#fafafa" }}>
+                            {row.cells.map((cell: any, ci: number) => (
+                              <td key={ci} style={{
+                                width: CELL_WIDTH, height: 28, textAlign: "center", fontSize: 11,
+                                fontWeight: 700, color: cell.totalUsed > 0 ? "#16a34a" : "#999",
+                                borderRight: "1px solid #e8e8e8", borderBottom: "1px solid #d9d9d9",
+                                background: cell.totalUsed > 0 ? "#dcfce7" : undefined,
+                              }}>
+                                {cell.totalUsed}/{cell.total}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={`${row.machineId}-${row.groupIndex}`}>
+                          {row.cells.map((cell: any, ci: number) => (
+                            <td key={`${cell.date}-${cell.shift}`}
+                              onClick={() => handleMachineCellClick(cell.task)}
+                              style={{
+                                width: CELL_WIDTH, height: ROW_HEIGHT, cursor: cell.task ? "pointer" : "default",
+                                borderRight: "1px solid #e8e8e8", borderBottom: "1px solid #e8e8e8",
+                                background: cell.task
+                                  ? cell.task === selectedMachineTask ? "#bbf7d0"
+                                    : (cell.task.status === "待车间确认" || cell.task.status === "车间已确认" || cell.task.status === "最终确认") ? "#dcfce7"
+                                    : "#fef9c3"
+                                  : undefined,
+                                fontSize: 10, verticalAlign: "middle", textAlign: "center",
+                              }}>
+                              {cell.task ? (
+                                <div style={{ lineHeight: 1.3, wordBreak: "break-all", padding: "0 2px" }}>
+                                  <div>{cell.task.machineCount}台×{cell.task.productName}</div>
+                                  <div style={{ fontWeight: 600 }}>+{cell.task.quantity}</div>
+                                </div>
+                              ) : (
+                                <div style={{ color: "#bbb", fontSize: 9 }}>可用{cell.available ?? 0}/{cell.total ?? 0}</div>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })
+                  )
                 ) : (
-                  (uiStore.activeProcessTab === "成型" ? machineGanttData :
-                   uiStore.activeProcessTab === "速冻" ? freezingMachineGanttData :
-                   packagingMachineGanttData).map((row: any, ri: number) => (
-                    <tr key={ri}>
-                      {row.cells.map((cell: any, ci: number) => (
-                        <td key={`${cell.date}-${cell.shift}`}
-                          onClick={() => handleMachineCellClick(cell.task)}
-                          style={{
-                            width: CELL_WIDTH, height: ROW_HEIGHT, cursor: cell.task ? "pointer" : "default",
-                            borderRight: "1px solid #e8e8e8", borderBottom: "1px solid #e8e8e8",
-                            background: cell.task
-                              ? cell.task === selectedMachineTask ? "#bbf7d0"
-                                : (cell.task.status === "待车间确认" || cell.task.status === "车间已确认" || cell.task.status === "最终确认") ? "#dcfce7"
-                                : "#fef9c3"
-                              : undefined,
-                            fontSize: 10, verticalAlign: "middle", textAlign: "center",
-                          }}>
-                          {cell.task ? (
-                            <div style={{ lineHeight: 1.3, wordBreak: "break-all", padding: "0 2px" }}>
-                              <div>{cell.task.machineCount}台×{cell.task.productName}</div>
-                              <div style={{ fontWeight: 600 }}>+{cell.task.quantity}</div>
-                            </div>
-                          ) : ri === 0 ? (
-                            <div style={{ color: "#bbb", fontSize: 9 }}>
-                              {uiStore.activeProcessTab === "成型"
-                                ? `可用${cell.available ?? 0}/${cell.total ?? 0}`
-                                : `可用${cell.used ?? 0}/${cell.total ?? 0}`}
-                            </div>
-                          ) : null}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
+                  (uiStore.activeProcessTab === "速冻" ? freezingMachineGanttData : packagingMachineGanttData).length === 0 ? (
+                    <tr><td colSpan={dateShifts.length} style={{ padding: 40, textAlign: "center", color: "#999" }}>
+                      {selectedProduct ? "该品相当前工序无可用机台" : "请点击上方品相查看机台排产"}
+                    </td></tr>
+                  ) : (
+                    (uiStore.activeProcessTab === "速冻" ? freezingMachineGanttData : packagingMachineGanttData).map((row: any, ri: number) => (
+                      <tr key={ri}>
+                        {row.cells.map((cell: any, ci: number) => (
+                          <td key={`${cell.date}-${cell.shift}`}
+                            onClick={() => handleMachineCellClick(cell.task)}
+                            style={{
+                              width: CELL_WIDTH, height: ROW_HEIGHT, cursor: cell.task ? "pointer" : "default",
+                              borderRight: "1px solid #e8e8e8", borderBottom: "1px solid #e8e8e8",
+                              background: cell.task
+                                ? cell.task === selectedMachineTask ? "#bbf7d0"
+                                  : (cell.task.status === "待车间确认" || cell.task.status === "车间已确认" || cell.task.status === "最终确认") ? "#dcfce7"
+                                  : "#fef9c3"
+                                : undefined,
+                              fontSize: 10, verticalAlign: "middle", textAlign: "center",
+                            }}>
+                            {cell.task ? (
+                              <div style={{ lineHeight: 1.3, wordBreak: "break-all", padding: "0 2px" }}>
+                                <div>{cell.task.machineCount}台×{cell.task.productName}</div>
+                                <div style={{ fontWeight: 600 }}>+{cell.task.quantity}</div>
+                              </div>
+                            ) : (
+                              <div style={{ color: "#bbb", fontSize: 9 }}>
+                                {`可用${cell.used ?? 0}/${cell.total ?? 0}`}
+                              </div>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )
                 )}
               </tbody>
             </table>
