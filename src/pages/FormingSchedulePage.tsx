@@ -966,7 +966,7 @@ const FormingSchedulePage: React.FC = () => {
                     style={{ flex: 1, minHeight: 0, overflow: "auto", fontSize: 12 }}>
                     {machineGanttData.length > 0 ? (
                       <table style={{ minWidth: 280, borderCollapse: "collapse" }}>
-                        <thead><tr style={{ background: "#fafafa", height: 36 }}>
+                        <thead><tr style={{ background: "#fafafa", height: 36, position: "sticky", top: 0, zIndex: 5 }}>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>车间</th>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台名称</th>
                           <th style={{ ...thStyle, borderBottom: "2px solid #d9d9d9" }}>机台编号</th>
