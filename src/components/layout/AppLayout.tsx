@@ -47,6 +47,12 @@ const AppLayout: React.FC = () => {
 
   const getSelectedKeys = () => [location.pathname];
   const [openKeys, setOpenKeys] = useState<string[]>(["master", "schedule"]);
+  const handleOpenChange = (keys: string[]) => {
+    // 强制始终展开主数据和排产管理
+    const required = ["master", "schedule"];
+    const merged = new Set([...keys, ...required]);
+    setOpenKeys([...merged]);
+  };
 
   const crumbs = breadcrumbMap[location.pathname] || [];
 
@@ -57,7 +63,7 @@ const AppLayout: React.FC = () => {
           borderBottom: "1px solid #e8e8e8", fontWeight: 700, fontSize: 15, color: "#16a34a" }}>
           🏭 安井APS demo
         </div>
-        <Menu mode="inline" selectedKeys={getSelectedKeys()} openKeys={openKeys} onOpenChange={setOpenKeys}
+        <Menu mode="inline" selectedKeys={getSelectedKeys()} openKeys={openKeys} onOpenChange={handleOpenChange}
           items={menuItems} onClick={({ key }) => navigate(key)}
           style={{ borderRight: 0, marginTop: 8 }} />
       </Sider>
