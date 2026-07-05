@@ -778,7 +778,7 @@ const FormingSchedulePage: React.FC = () => {
         <DatePicker value={autoStartDate} onChange={(d) => d && setAutoStartDate(d)} size="small" style={{ width: 120 }} />
         <span style={{ fontSize: 12, color: "#666" }}>班次</span>
         <InputNumber value={autoShiftCount} onChange={(v) => v && setAutoShiftCount(v)} size="small" style={{ width: 70 }} min={2} max={30} />
-        <Button type="primary" icon={<ThunderboltOutlined />} onClick={handleAutoSchedule} style={{ background: "#16a34a", borderColor: "#16a34a" }}>自动排产</Button>
+        <Button type="primary" icon={<ThunderboltOutlined />} onClick={handleAutoSchedule} style={{ backgroundColor: "#16a34a", borderColor: "#16a34a", color: "#fff" }}>自动排产</Button>
         <Button icon={<UnorderedListOutlined />}
           disabled={!uiStore.selectedProductId}
           onClick={() => { if (!uiStore.selectedProductId) { message.warning("请先选择品相"); return; } setBomModalOpen(true); }}>BOM</Button>
